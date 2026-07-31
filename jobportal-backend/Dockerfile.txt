@@ -9,8 +9,7 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     zip \
     unzip \
-    nginx \
-    supervisor
+    nginx
 
 # Install PHP extensions
 RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
@@ -21,8 +20,8 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy application
-COPY . .
+# Copy application from the 'jobportal-backend' folder
+COPY jobportal-backend/ .
 
 # Install dependencies
 RUN composer install --no-dev --optimize-autoloader
@@ -31,6 +30,9 @@ RUN composer install --no-dev --optimize-autoloader
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/storage \
     && chmod -R 755 /var/www/html/bootstrap/cache
+
+# Copy SSL certificate
+COPY jobportal-backend/ca.pem /var/www/html/ca.pem
 
 # Copy nginx configuration
 RUN echo 'server { \
