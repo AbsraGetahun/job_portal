@@ -20,15 +20,19 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www/html
 
-# Create cache directory and set permissions BEFORE composer install
+# Create required directories BEFORE copying files
 RUN mkdir -p /var/www/html/bootstrap/cache \
+    && mkdir -p /var/www/html/storage \
+    && mkdir -p /var/www/html/storage/app \
+    && mkdir -p /var/www/html/storage/framework \
+    && mkdir -p /var/www/html/storage/logs \
     && chmod -R 755 /var/www/html/bootstrap \
     && chmod -R 755 /var/www/html/storage
 
 # Copy application files
 COPY jobportal-backend/ .
 
-# Install dependencies (with cache directory already writable)
+# Install dependencies (with directories already created)
 RUN composer install --no-dev --optimize-autoloader
 
 # Set additional permissions
