@@ -20,11 +20,14 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www/html
 
-# Create required directories BEFORE copying files
+# Create required directories
 RUN mkdir -p /var/www/html/bootstrap/cache \
     && mkdir -p /var/www/html/storage \
     && mkdir -p /var/www/html/storage/app \
     && mkdir -p /var/www/html/storage/framework \
+    && mkdir -p /var/www/html/storage/framework/cache \
+    && mkdir -p /var/www/html/storage/framework/sessions \
+    && mkdir -p /var/www/html/storage/framework/views \
     && mkdir -p /var/www/html/storage/logs \
     && chmod -R 755 /var/www/html/bootstrap \
     && chmod -R 755 /var/www/html/storage
@@ -32,18 +35,34 @@ RUN mkdir -p /var/www/html/bootstrap/cache \
 # Copy application files
 COPY jobportal-backend/ .
 
-# Install dependencies (with directories already created)
-RUN composer install --no-dev --optimize-autoloader
-
-# Set additional permissions
-RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html/storage \
-    && chmod -R 755 /var/www/html/bootstrap/cache
-
 # Copy SSL certificate
 COPY jobportal-backend/ca.pem /var/www/html/ca.pem
 
-# Copy nginx configuration
+# Create .env file using environment variables (DB_PASSWORD comes from Render)
+RUN echo "APP_ENV=production" > /var/www/html/.env && \
+    echo "APP_DEBUG=false" >> /var/www/html/.env && \
+    echo "APP_URL=https://job-portal-api-wifg.onrender.com" >> /var/www/html/.env && \
+    echo "DB_CONNECTION=mysql" >> /var/www/html/.env && \
+    echo "DB_HOST=${DB_HOST}" >> /var/www/html/.env && \
+    echo "DB_PORT=${DB_PORT}" >> /var/www/html/.env && \
+    echo "DB_DATABASE=${DB_DATABASE}" >> /var/www/html/.env && \
+    echo "DB_USERNAME=${DB_USERNAME}" >> /var/www/html/.env && \
+    echo "DB_PASSWORD=${DB_PASSWORD}" >> /var/www/html/.env && \
+    echo "DB_SSL_CA=/var/www/html/ca.pem" >> /var/www/html/.env
+
+# Install dependencies
+RUN composer install --no-dev --optimize-autoloader
+
+# Set permissions
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html/storage \
+    && chmod -R 755 /var/www/html/bootstrap/cache \
+    && chmod 644 /var/www/html/.env
+
+# Generate application key
+RUN php artisan key:generate
+
+# Nginx configuration
 RUN echo 'server { \
     listen 8080; \
     root /var/www/html/public; \
