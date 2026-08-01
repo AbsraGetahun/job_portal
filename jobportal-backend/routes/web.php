@@ -58,3 +58,38 @@ Route::get('/debug-db', function() {
 Route::get('/debug-phpinfo', function() {
     phpinfo();
 });
+
+// ============================================
+// NEW DEBUG ROUTES - Check .env and logs
+// ============================================
+
+Route::get('/check-env', function() {
+    $envPath = base_path('.env');
+    if (file_exists($envPath)) {
+        return '✅ .env file exists at: ' . $envPath . '<br><br>Content:<br><pre>' . htmlspecialchars(file_get_contents($envPath)) . '</pre>';
+    } else {
+        return '❌ .env file NOT found at: ' . $envPath;
+    }
+});
+
+Route::get('/check-log', function() {
+    $logPath = storage_path('logs/laravel.log');
+    if (file_exists($logPath)) {
+        $content = file_get_contents($logPath);
+        $lines = explode("\n", $content);
+        $lastLines = array_slice($lines, -50); // Get last 50 lines
+        return '<h3>Last 50 lines of laravel.log:</h3><pre>' . htmlspecialchars(implode("\n", $lastLines)) . '</pre>';
+    } else {
+        return '❌ No log file found at: ' . $logPath;
+    }
+});
+
+Route::get('/check-storage', function() {
+    $storagePath = storage_path();
+    $files = scandir($storagePath);
+    return '<h3>Storage directory contents:</h3><pre>' . print_r($files, true) . '</pre>';
+});
+
+Route::get('/ping', function() {
+    return 'pong';
+});
